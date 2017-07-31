@@ -4,21 +4,23 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.VisibleForTesting;
+import android.support.test.espresso.IdlingResource;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.extensions.android.json.AndroidJsonFactory;
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
 import com.google.api.client.googleapis.services.GoogleClientRequestInitializer;
+import com.udacity.gradle.builditbigger.idlingresource.MyIdlingResource;
 
 import java.io.IOException;
 
-import ec.medinamobile.JokeSupplier;
 import ec.medinamobile.finalproject.backend.myApi.MyApi;
 import ec.medinamobile.jokeactivity.JokeActivity;
 
@@ -27,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private GetJokeAsyncTask jokeTask;
+    @Nullable private MyIdlingResource mIdlingResource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,12 +62,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void tellJoke(View view) {
-
         if (jokeTask==null) {
+
             jokeTask = new GetJokeAsyncTask();
             jokeTask.execute(this);
         }
 
+    }
+
+    @VisibleForTesting
+    @NonNull
+    public IdlingResource getIdlingResource(){
+        if (mIdlingResource==null){
+            mIdlingResource = new MyIdlingResource();
+        }
+        return mIdlingResource;
     }
 
     class GetJokeAsyncTask extends AsyncTask<Context, Void, String>{
@@ -74,6 +86,9 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(Context... contexts) {
+            if (mIdlingResource!=null){
+                mIdlingResource.setIdleState(false);
+            }
             String result = null;
             mContext = contexts[0];
             if (mApiService==null){
@@ -110,6 +125,9 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra(Intent.EXTRA_TEXT, s);
                 startActivity(intent);
                 jokeTask = null;
+                if (mIdlingResource!=null){
+                    mIdlingResource.setIdleState(true);
+                }
             }
 
         }
